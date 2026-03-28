@@ -12,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.paymentgateway.dto.response.TransactionResponse;
+import java.util.List;
 
 import java.util.UUID;
 
@@ -60,5 +62,14 @@ public class PaymentController {
 
         TransferResponse response = transferService.transfer(request, idempotencyKey);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/wallets/{id}/transactions")
+    public ResponseEntity<List<TransactionResponse>> getTransactionHistory(
+            @PathVariable UUID id) {
+
+        log.info("Transaction history request for wallet: {}", id);
+        List<TransactionResponse> transactions = transferService.getTransactionHistory(id);
+        return ResponseEntity.ok(transactions);
     }
 }
