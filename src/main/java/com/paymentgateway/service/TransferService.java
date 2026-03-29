@@ -8,8 +8,6 @@ import com.paymentgateway.dto.response.TransactionResponse;
 import com.paymentgateway.dto.response.TransferResponse;
 import com.paymentgateway.dto.response.WalletResponse;
 import com.paymentgateway.exception.WalletNotFoundException;
-import com.paymentgateway.kafka.event.PaymentCompletedEvent;
-import com.paymentgateway.kafka.producer.PaymentEventProducer;
 import com.paymentgateway.repository.TransactionRepository;
 import com.paymentgateway.repository.WalletRepository;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +34,8 @@ public class TransferService {
     private final TransactionRepository transactionRepository;
     private final AtomicTransferExecutor atomicTransferExecutor;
     private final RedissonClient redissonClient;
-    private final PaymentEventProducer paymentEventProducer;
+
+    // PaymentEventProducer is REMOVED — OutboxRelayJob handles Kafka now
 
     @Value("${app.redis.lock.wait-time-seconds:3}")
     private long lockWaitTimeSeconds;
@@ -73,9 +72,9 @@ public class TransferService {
                 );
             }
 
-            TransferResponse response = atomicTransferExecutor.execute(request, idempotencyKey);
-            publishEvent(response, request);
-            return response;
+            // AtomicTransferExecutor now writes the outbox row inside
+            // the same DB transaction — Kafka delivery is guaranteed
+            return atomicTransferExecutor.execute(request, idempotencyKey);
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -102,24 +101,6 @@ public class TransferService {
                 .stream()
                 .map(this::toTransactionResponse)
                 .collect(Collectors.toList());
-    }
-
-    private void publishEvent(TransferResponse response, TransferRequest request) {
-        try {
-            paymentEventProducer.publishPaymentCompleted(
-                    PaymentCompletedEvent.builder()
-                            .correlationId(response.getCorrelationId())
-                            .senderWalletId(request.getSenderWalletId())
-                            .receiverWalletId(request.getReceiverWalletId())
-                            .amount(request.getAmount())
-                            .currency(request.getCurrency())
-                            .processedAt(response.getProcessedAt())
-                            .build()
-            );
-        } catch (Exception e) {
-            log.error("Kafka publish failed for correlationId {}. Money moved. Consider Outbox Pattern.",
-                    response.getCorrelationId(), e);
-        }
     }
 
     private WalletResponse toWalletResponse(Wallet w) {

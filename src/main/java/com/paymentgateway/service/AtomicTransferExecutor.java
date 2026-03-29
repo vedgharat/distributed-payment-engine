@@ -1,5 +1,8 @@
 package com.paymentgateway.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.paymentgateway.domain.entity.OutboxEvent;
 import com.paymentgateway.domain.entity.Transaction;
 import com.paymentgateway.domain.entity.Wallet;
 import com.paymentgateway.domain.enums.TransactionStatus;
@@ -7,6 +10,8 @@ import com.paymentgateway.domain.enums.TransactionType;
 import com.paymentgateway.dto.request.TransferRequest;
 import com.paymentgateway.dto.response.TransferResponse;
 import com.paymentgateway.exception.WalletNotFoundException;
+import com.paymentgateway.kafka.event.PaymentCompletedEvent;
+import com.paymentgateway.repository.OutboxEventRepository;
 import com.paymentgateway.repository.TransactionRepository;
 import com.paymentgateway.repository.WalletRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,17 +21,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 
-/**
- * Isolated Spring bean whose sole purpose is to own the @Transactional boundary.
- *
- * WHY THIS EXISTS: Spring's @Transactional works through a runtime proxy. When a
- * method calls another @Transactional method on the SAME bean (self-invocation),
- * the call goes directly to 'this' — bypassing the proxy — and no transaction is
- * started. By moving the transactional work into a separate bean, every call goes
- * through the Spring proxy and the transaction is correctly opened.
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -34,6 +31,8 @@ public class AtomicTransferExecutor {
 
     private final WalletRepository walletRepository;
     private final TransactionRepository transactionRepository;
+    private final OutboxEventRepository outboxEventRepository;
+    private final ObjectMapper objectMapper;
 
     @Transactional
     public TransferResponse execute(TransferRequest request, String idempotencyKey) {
@@ -50,7 +49,7 @@ public class AtomicTransferExecutor {
         Wallet firstLocked  = findAndLock(firstId);
         Wallet secondLocked = findAndLock(secondId);
 
-        Wallet sender   = firstId.equals(request.getSenderWalletId())   ? firstLocked : secondLocked;
+        Wallet sender   = firstId.equals(request.getSenderWalletId()) ? firstLocked : secondLocked;
         Wallet receiver = firstId.equals(request.getReceiverWalletId()) ? firstLocked : secondLocked;
 
         // Currency guard
@@ -70,8 +69,8 @@ public class AtomicTransferExecutor {
         walletRepository.save(sender);
         walletRepository.save(receiver);
 
-        // Immutable double-entry ledger records
-        transactionRepository.saveAll(java.util.List.of(
+        // Double-entry immutable ledger records
+        transactionRepository.saveAll(List.of(
                 Transaction.builder()
                         .correlationId(correlationId)
                         .walletId(sender.getId())
@@ -92,8 +91,35 @@ public class AtomicTransferExecutor {
                         .build()
         ));
 
-        log.info("DB transaction committed [correlationId={}]. Sender: {}, Receiver: {}",
-                correlationId, sender.getBalance(), receiver.getBalance());
+        OffsetDateTime now = OffsetDateTime.now();
+
+        // ---------------------------------------------------------------
+        // OUTBOX PATTERN — write event to DB in the SAME transaction.
+        // If this commit succeeds, the event is guaranteed to reach Kafka
+        // eventually — even if Kafka is down right now.
+        // The OutboxRelayJob will pick this up within 5 seconds.
+        // ---------------------------------------------------------------
+        PaymentCompletedEvent event = PaymentCompletedEvent.builder()
+                .correlationId(correlationId)
+                .senderWalletId(sender.getId())
+                .receiverWalletId(receiver.getId())
+                .amount(amount)
+                .currency(request.getCurrency().toUpperCase())
+                .processedAt(now)
+                .build();
+
+        outboxEventRepository.save(
+                OutboxEvent.builder()
+                        .correlationId(correlationId)
+                        .eventType("PAYMENT_COMPLETED")
+                        .payload(serializeEvent(event))
+                        .status("PENDING")
+                        .retryCount(0)
+                        .build()
+        );
+
+        log.info("DB transaction committed [correlationId={}]. Outbox event written. " +
+                "Sender: {}, Receiver: {}", correlationId, sender.getBalance(), receiver.getBalance());
 
         return TransferResponse.builder()
                 .correlationId(correlationId)
@@ -104,8 +130,16 @@ public class AtomicTransferExecutor {
                 .status("COMPLETED")
                 .senderBalanceAfter(sender.getBalance())
                 .receiverBalanceAfter(receiver.getBalance())
-                .processedAt(OffsetDateTime.now())
+                .processedAt(now)
                 .build();
+    }
+
+    private String serializeEvent(PaymentCompletedEvent event) {
+        try {
+            return objectMapper.writeValueAsString(event);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize PaymentCompletedEvent", e);
+        }
     }
 
     private Wallet findAndLock(UUID id) {
