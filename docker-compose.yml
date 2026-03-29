@@ -60,5 +60,27 @@ services:
       timeout: 10s
       retries: 10
 
+  app:
+    build: .
+    container_name: payment_app
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://payment_postgres:5432/payment_gateway
+      SPRING_DATASOURCE_USERNAME: pguser
+      SPRING_DATASOURCE_PASSWORD: pgpassword
+      SPRING_DATA_REDIS_HOST: payment_redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_PASSWORD: redispassword
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    restart: on-failure
+  
 volumes:
   postgres_data:
