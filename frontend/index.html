@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Distributed Payment Engine — A fault-tolerant, high-concurrency payment gateway dashboard with real-time wallet management and fund transfers.">
+  <title>Payment Engine — Dashboard</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <div class="app-container">
+
+    <!-- ─── Header ─── -->
+    <header class="app-header">
+      <div class="app-logo">
+        <div class="app-logo-icon">⚡</div>
+        <div class="app-logo-text">
+          <h1>Payment Engine</h1>
+          <p>Distributed Ledger Gateway</p>
+        </div>
+      </div>
+      <div class="header-status">
+        <span class="status-dot"></span>
+        <span>System Online</span>
+      </div>
+    </header>
+
+    <!-- ─── Tab Navigation ─── -->
+    <nav class="tab-nav" role="tablist" aria-label="Main navigation">
+      <button class="tab-btn active" data-tab="dashboard" role="tab" id="nav-dashboard">
+        <span class="tab-icon">📊</span>
+        <span class="tab-label">Dashboard</span>
+      </button>
+      <button class="tab-btn" data-tab="wallets" role="tab" id="nav-wallets">
+        <span class="tab-icon">💳</span>
+        <span class="tab-label">Wallets</span>
+      </button>
+      <button class="tab-btn" data-tab="transfer" role="tab" id="nav-transfer">
+        <span class="tab-icon">💸</span>
+        <span class="tab-label">Transfer</span>
+      </button>
+      <button class="tab-btn" data-tab="history" role="tab" id="nav-history">
+        <span class="tab-icon">📋</span>
+        <span class="tab-label">History</span>
+      </button>
+    </nav>
+
+    <!-- ═══════════════ DASHBOARD TAB ═══════════════ -->
+    <section id="tab-dashboard" class="tab-content active" role="tabpanel">
+
+      <!-- Stats Cards -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Wallets</div>
+          <div class="stat-value" id="stat-total-wallets">0</div>
+          <div class="stat-sub">Active accounts</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Balance</div>
+          <div class="stat-value" id="stat-total-balance">$0.00</div>
+          <div class="stat-sub">Across all wallets</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Transactions</div>
+          <div class="stat-value" id="stat-total-transactions">0</div>
+          <div class="stat-sub">Ledger entries</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Currencies</div>
+          <div class="stat-value" id="stat-currencies">0</div>
+          <div class="stat-sub">Active currencies</div>
+        </div>
+      </div>
+
+      <!-- Recent Wallets -->
+      <div class="section-header">
+        <h2 class="section-title">Recent Wallets</h2>
+        <button class="btn btn-sm btn-primary" onclick="document.querySelector('[data-tab=wallets]').click()">View All →</button>
+      </div>
+      <div id="recent-wallets" class="wallet-grid">
+        <div class="loading-overlay">
+          <span class="spinner"></span>
+          Loading dashboard…
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ═══════════════ WALLETS TAB ═══════════════ -->
+    <section id="tab-wallets" class="tab-content" role="tabpanel">
+
+      <div class="section-header">
+        <h2 class="section-title">All Wallets</h2>
+        <button class="btn btn-primary" onclick="openCreateWalletModal()" id="btn-new-wallet">
+          ＋ New Wallet
+        </button>
+      </div>
+
+      <div id="wallet-grid" class="wallet-grid">
+        <div class="loading-overlay" style="grid-column: 1 / -1">
+          <span class="spinner"></span>
+          Loading wallets…
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ═══════════════ TRANSFER TAB ═══════════════ -->
+    <section id="tab-transfer" class="tab-content" role="tabpanel">
+
+      <div class="form-panel">
+        <div class="form-panel-title">💸 Send Funds</div>
+
+        <form id="transfer-form" autocomplete="off">
+          <div class="form-group">
+            <label class="form-label" for="tf-sender">From Wallet</label>
+            <select class="form-select" id="tf-sender" required>
+              <option value="">Select sender wallet…</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="tf-receiver">To Wallet</label>
+            <select class="form-select" id="tf-receiver" required>
+              <option value="">Select receiver wallet…</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="tf-amount">Amount</label>
+              <input type="number" class="form-input" id="tf-amount" placeholder="0.00" step="0.01" min="0.01" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="tf-currency">Currency</label>
+              <select class="form-select" id="tf-currency">
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="GBP">GBP</option>
+                <option value="INR">INR</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-success" id="tf-submit-btn" style="width: 100%;">
+            💸 Send Money
+          </button>
+        </form>
+
+        <div id="transfer-result"></div>
+      </div>
+
+    </section>
+
+    <!-- ═══════════════ HISTORY TAB ═══════════════ -->
+    <section id="tab-history" class="tab-content" role="tabpanel">
+
+      <div class="section-header">
+        <h2 class="section-title">Transaction History</h2>
+        <div class="wallet-selector">
+          <select class="form-select" id="hist-wallet-select">
+            <option value="">Select a wallet…</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="glass-panel">
+        <div class="table-container">
+          <table class="data-table" id="history-table">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Correlation</th>
+                <th>Description</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody id="history-table-body"></tbody>
+          </table>
+        </div>
+
+        <div id="history-empty" class="empty-state" style="display:block;">
+          <div class="empty-state-icon">📋</div>
+          <h3>Select a wallet</h3>
+          <p>Choose a wallet above to view its transaction history</p>
+        </div>
+      </div>
+
+    </section>
+
+  </div><!-- /.app-container -->
+
+  <!-- ═══════════════ CREATE WALLET MODAL ═══════════════ -->
+  <div class="modal-overlay" id="create-wallet-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">Create New Wallet</h2>
+        <button class="modal-close" onclick="closeCreateWalletModal()" aria-label="Close">✕</button>
+      </div>
+      <form id="create-wallet-form" autocomplete="off">
+        <div class="form-group">
+          <label class="form-label" for="cw-owner-name">Owner Name</label>
+          <input type="text" class="form-input" id="cw-owner-name" placeholder="e.g. Alice Johnson" required maxlength="255">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="cw-initial-balance">Initial Balance</label>
+            <input type="number" class="form-input" id="cw-initial-balance" placeholder="1000.00" step="0.01" min="0" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="cw-currency">Currency</label>
+            <select class="form-select" id="cw-currency">
+              <option value="USD">USD</option>
+              <option value="EUR">EUR</option>
+              <option value="GBP">GBP</option>
+              <option value="INR">INR</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeCreateWalletModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="cw-submit-btn">✓ Create Wallet</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ═══════════════ WALLET DETAILS MODAL ═══════════════ -->
+  <div class="modal-overlay" id="wallet-details-modal">
+    <div class="modal" style="max-width: 640px;">
+      <div class="modal-header">
+        <h2 class="modal-title">Wallet Details</h2>
+        <button class="modal-close" onclick="closeWalletDetailsModal()" aria-label="Close">✕</button>
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <div style="font-size: 1.25rem; font-weight: 700;" id="wd-owner"></div>
+        <div class="mono" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;" id="wd-id"></div>
+      </div>
+
+      <div class="stats-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 24px;">
+        <div class="stat-card" style="padding: 16px;">
+          <div class="stat-label">Balance</div>
+          <div class="stat-value" style="font-size: 1.5rem;" id="wd-balance">$0.00</div>
+        </div>
+        <div class="stat-card" style="padding: 16px;">
+          <div class="stat-label">Currency</div>
+          <div class="stat-value" style="font-size: 1.5rem;" id="wd-currency">USD</div>
+        </div>
+      </div>
+
+      <div style="font-size: 0.875rem; font-weight: 600; margin-bottom: 12px;">Recent Transactions</div>
+      <div class="glass-panel">
+        <div class="table-container" style="max-height: 300px; overflow-y: auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Correlation</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody id="wd-txns-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeWalletDetailsModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

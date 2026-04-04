@@ -3,9 +3,9 @@ spring:
     name: payment-gateway
 
   datasource:
-    url: jdbc:postgresql://localhost:5434/payment_gateway
-    username: pguser
-    password: pgpassword
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5434/payment_gateway}
+    username: ${SPRING_DATASOURCE_USERNAME:pguser}
+    password: ${SPRING_DATASOURCE_PASSWORD:pgpassword}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 20
@@ -29,15 +29,20 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
 
-  # ✅ ADD THIS BLOCK HERE
   data:
     redis:
-      host: localhost
-      port: 6379
-      password: redispassword
+      host: ${SPRING_REDIS_HOST:localhost}
+      port: ${SPRING_REDIS_PORT:6379}
+      password: ${SPRING_REDIS_PASSWORD:redispassword}
+      ssl:
+        enabled: ${SPRING_REDIS_SSL:false}
 
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    properties:
+      sasl.jaas.config: ${SPRING_KAFKA_SASL_JAAS_CONFIG:}
+      sasl.mechanism: ${SPRING_KAFKA_SASL_MECHANISM:}
+      security.protocol: ${SPRING_KAFKA_SECURITY_PROTOCOL:PLAINTEXT}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer

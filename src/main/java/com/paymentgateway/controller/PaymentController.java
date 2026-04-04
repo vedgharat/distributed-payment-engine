@@ -37,6 +37,15 @@ public class PaymentController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    // GET /api/v1/wallets
+    @GetMapping("/wallets")
+    public ResponseEntity<List<WalletResponse>> getAllWallets() {
+
+        log.info("List all wallets request");
+        List<WalletResponse> wallets = transferService.getAllWallets();
+        return ResponseEntity.ok(wallets);
+    }
+
     // GET /api/v1/wallets/{id}
     @GetMapping("/wallets/{id}")
     public ResponseEntity<WalletResponse> getWallet(@PathVariable UUID id) {

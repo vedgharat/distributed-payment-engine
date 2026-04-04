@@ -19,12 +19,17 @@ public class RedissonConfig {
     @Value("${spring.data.redis.password:redispassword}")
     private String redisPassword;
 
+    @Value("${spring.data.redis.ssl.enabled:false}")
+    private boolean sslEnabled;
+
     @Bean(destroyMethod = "shutdown")
     public RedissonClient redissonClient() {
         Config config = new Config();
 
+        String protocol = sslEnabled ? "rediss://" : "redis://";
+        
         config.useSingleServer()
-                .setAddress(String.format("redis://%s:%d", redisHost, redisPort))
+                .setAddress(String.format("%s%s:%d", protocol, redisHost, redisPort))
                 .setPassword(redisPassword)
                 // Connection pool settings — tune based on expected concurrency
                 .setConnectionPoolSize(64)

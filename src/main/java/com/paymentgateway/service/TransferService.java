@@ -86,6 +86,13 @@ public class TransferService {
         }
     }
 
+    public List<WalletResponse> getAllWallets() {
+        return walletRepository.findAll()
+                .stream()
+                .map(this::toWalletResponse)
+                .collect(Collectors.toList());
+    }
+
     public WalletResponse getWallet(UUID id) {
         return walletRepository.findById(id)
                 .map(this::toWalletResponse)
