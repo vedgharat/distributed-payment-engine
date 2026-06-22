@@ -4,12 +4,7 @@
    ======================================================================== */
 
 // ─── Constants ───
-const isProd = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
-// In production, you will set this to your Render/Koyeb backend URL.
-// Since we don't know it yet, we default it. You may need to change this later!
-const API_BASE = isProd 
-  ? 'https://payment-gateway-production.up.railway.app/api/v1' // Replace with your actual backend URL when hosted
-  : 'http://localhost:8080/api/v1';
+const API_BASE = '/api/v1';
 
 // ─── State ───
 const state = {
@@ -79,6 +74,7 @@ function getInitials(name) {
   return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
 }
 
+// Generates short safe idempotency keys
 function generateIdempotencyKey() {
   return 'txn-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
 }
@@ -89,10 +85,17 @@ function showToast(message, type = 'info') {
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
 
-  const icons = { success: '✓', error: '✕', info: 'ℹ' };
-  toast.innerHTML = `<span>${icons[type] || 'ℹ'}</span> <span>${message}</span>`;
+  const icons = { success: 'check', error: 'x', info: 'info' };
+  const iconName = icons[type] || 'info';
+  
+  toast.innerHTML = `<i data-lucide="${iconName}"></i> <span>${message}</span>`;
 
   container.appendChild(toast);
+  
+  if (window.lucide) {
+    lucide.createIcons({ nodeList: [toast] });
+  }
+
   setTimeout(() => {
     toast.style.animation = 'toastOut 0.3s ease forwards';
     setTimeout(() => toast.remove(), 300);
@@ -156,10 +159,13 @@ function renderRecentWallets(wallets) {
   if (!wallets.length) {
     container.innerHTML = `
       <div class="empty-state">
-        <div class="empty-state-icon">💳</div>
+        <div class="empty-state-icon">
+          <i data-lucide="wallet"></i>
+        </div>
         <h3>No wallets yet</h3>
         <p>Create your first wallet to get started</p>
       </div>`;
+    if (window.lucide) lucide.createIcons({ scope: container });
     return;
   }
 
@@ -178,6 +184,8 @@ function renderRecentWallets(wallets) {
       </div>
     </div>
   `).join('');
+  
+  if (window.lucide) lucide.createIcons({ scope: container });
 }
 
 // ─── Wallets View ───
@@ -196,10 +204,13 @@ function renderWalletGrid(wallets) {
   if (!wallets.length) {
     container.innerHTML = `
       <div class="empty-state" style="grid-column: 1 / -1">
-        <div class="empty-state-icon">💳</div>
+        <div class="empty-state-icon">
+          <i data-lucide="wallet"></i>
+        </div>
         <h3>No wallets yet</h3>
         <p>Click "New Wallet" to create your first wallet</p>
       </div>`;
+    if (window.lucide) lucide.createIcons({ scope: container });
     return;
   }
 
@@ -217,11 +228,17 @@ function renderWalletGrid(wallets) {
         <span class="wallet-currency">${w.currency}</span>
       </div>
       <div class="wallet-actions">
-        <button class="btn btn-sm btn-secondary" onclick="viewWalletHistory('${w.id}')">📋 History</button>
-        <button class="btn btn-sm btn-primary" onclick="prefillTransfer('${w.id}')">💸 Send</button>
+        <button class="btn btn-sm btn-secondary" onclick="viewWalletHistory('${w.id}')">
+          <i data-lucide="list-todo"></i> History
+        </button>
+        <button class="btn btn-sm btn-primary" onclick="prefillTransfer('${w.id}')">
+          <i data-lucide="send"></i> Send
+        </button>
       </div>
     </div>
   `).join('');
+  
+  if (window.lucide) lucide.createIcons({ scope: container });
 }
 
 function openCreateWalletModal() {
@@ -259,7 +276,7 @@ async function submitCreateWallet(e) {
     showToast('Failed: ' + err.message, 'error');
   } finally {
     btn.disabled = false;
-    btn.innerHTML = '✓ Create Wallet';
+    btn.innerHTML = 'Create Wallet';
   }
 }
 
@@ -279,20 +296,33 @@ async function viewWalletDetails(id) {
     if (!txns.length) {
       tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:32px;">No transactions yet</td></tr>`;
     } else {
-      tbody.innerHTML = txns.slice(0, 10).map(t => `
-        <tr>
-          <td><span class="badge badge-${t.transactionType.toLowerCase()}">${t.transactionType === 'CREDIT' ? '↓' : '↑'} ${t.transactionType}</span></td>
-          <td class="${t.transactionType === 'CREDIT' ? 'amount-positive' : 'amount-negative'}" style="font-weight:600">
-            ${t.transactionType === 'CREDIT' ? '+' : '−'}${formatMoney(t.amount)}
-          </td>
-          <td><span class="badge badge-${t.status.toLowerCase()}">${t.status}</span></td>
-          <td class="mono">${shortId(t.correlationId)}</td>
-          <td style="color:var(--text-muted)">${formatDate(t.createdAt)}</td>
-        </tr>
-      `).join('');
+      tbody.innerHTML = txns.slice(0, 10).map(t => {
+        const isCredit = t.transactionType === 'CREDIT';
+        const badgeClass = isCredit ? 'badge-credit' : 'badge-debit';
+        const iconName = isCredit ? 'arrow-down-left' : 'arrow-up-right';
+        const amountClass = isCredit ? 'amount-positive' : 'amount-negative';
+        const prefix = isCredit ? '+' : '−';
+
+        return `
+          <tr>
+            <td>
+              <span class="badge ${badgeClass}">
+                <i data-lucide="${iconName}"></i> ${t.transactionType}
+              </span>
+            </td>
+            <td class="${amountClass}" style="font-weight:600">
+              ${prefix}${formatMoney(t.amount)}
+            </td>
+            <td><span class="badge badge-${t.status.toLowerCase()}">${t.status}</span></td>
+            <td class="mono">${shortId(t.correlationId)}</td>
+            <td style="color:var(--text-muted)">${formatDate(t.createdAt)}</td>
+          </tr>
+        `;
+      }).join('');
     }
 
     modal.classList.add('active');
+    if (window.lucide) lucide.createIcons({ scope: modal });
   } catch (err) {
     showToast('Failed to load wallet: ' + err.message, 'error');
   }
@@ -323,7 +353,6 @@ async function refreshTransferForm() {
 }
 
 function prefillTransfer(senderId) {
-  // Switch to transfer tab
   $$('.tab-btn').forEach(b => b.classList.remove('active'));
   $$('.tab-content').forEach(c => c.classList.remove('active'));
   $('[data-tab="transfer"]').classList.add('active');
@@ -335,7 +364,6 @@ function prefillTransfer(senderId) {
 }
 
 function viewWalletHistory(walletId) {
-  // Switch to history tab
   $$('.tab-btn').forEach(b => b.classList.remove('active'));
   $$('.tab-content').forEach(c => c.classList.remove('active'));
   $('[data-tab="history"]').classList.add('active');
@@ -373,7 +401,7 @@ async function submitTransfer(e) {
 
     resultDiv.innerHTML = `
       <div class="transfer-result">
-        <h3>✓ Transfer Successful</h3>
+        <h3><i data-lucide="check-circle-2" style="color:#10b981;width:18px;height:18px;"></i> Transfer Successful</h3>
         <div class="result-grid">
           <div class="result-item">
             <span class="result-item-label">Correlation ID</span>
@@ -403,19 +431,19 @@ async function submitTransfer(e) {
       </div>`;
 
     showToast('Transfer completed successfully!', 'success');
-
-    // Refresh the dropdowns with updated balances
     refreshTransferForm();
+    if (window.lucide) lucide.createIcons({ scope: resultDiv });
   } catch (err) {
     resultDiv.innerHTML = `
       <div class="transfer-result error">
-        <h3>✕ Transfer Failed</h3>
+        <h3><i data-lucide="alert-circle" style="color:#ef4444;width:18px;height:18px;"></i> Transfer Failed</h3>
         <p style="color:var(--text-secondary);font-size:0.875rem;">${err.message}</p>
       </div>`;
     showToast('Transfer failed: ' + err.message, 'error');
+    if (window.lucide) lucide.createIcons({ scope: resultDiv });
   } finally {
     btn.disabled = false;
-    btn.innerHTML = '💸 Send Money';
+    btn.innerHTML = 'Send Money';
   }
 }
 
@@ -465,22 +493,32 @@ function renderHistoryTable(txns) {
   }
 
   empty.style.display = 'none';
-  tbody.innerHTML = txns.map(t => `
-    <tr>
-      <td>
-        <span class="badge badge-${t.transactionType.toLowerCase()}">
-          ${t.transactionType === 'CREDIT' ? '↓' : '↑'} ${t.transactionType}
-        </span>
-      </td>
-      <td class="${t.transactionType === 'CREDIT' ? 'amount-positive' : 'amount-negative'}" style="font-weight:600">
-        ${t.transactionType === 'CREDIT' ? '+' : '−'}${formatMoney(t.amount)}
-      </td>
-      <td><span class="badge badge-${t.status.toLowerCase()}">${t.status}</span></td>
-      <td class="mono">${shortId(t.correlationId)}</td>
-      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis">${t.description || '—'}</td>
-      <td style="color:var(--text-muted)">${formatDate(t.createdAt)}</td>
-    </tr>
-  `).join('');
+  tbody.innerHTML = txns.map(t => {
+    const isCredit = t.transactionType === 'CREDIT';
+    const badgeClass = isCredit ? 'badge-credit' : 'badge-debit';
+    const iconName = isCredit ? 'arrow-down-left' : 'arrow-up-right';
+    const amountClass = isCredit ? 'amount-positive' : 'amount-negative';
+    const prefix = isCredit ? '+' : '−';
+
+    return `
+      <tr>
+        <td>
+          <span class="badge ${badgeClass}">
+            <i data-lucide="${iconName}"></i> ${t.transactionType}
+          </span>
+        </td>
+        <td class="${amountClass}" style="font-weight:600">
+          ${prefix}${formatMoney(t.amount)}
+        </td>
+        <td><span class="badge badge-${t.status.toLowerCase()}">${t.status}</span></td>
+        <td class="mono">${shortId(t.correlationId)}</td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis">${t.description || '—'}</td>
+        <td style="color:var(--text-muted)">${formatDate(t.createdAt)}</td>
+      </tr>
+    `;
+  }).join('');
+  
+  if (window.lucide) lucide.createIcons({ scope: tbody });
 }
 
 // ─── Init ───
@@ -510,4 +548,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Load initial data
   refreshDashboard();
+  
+  // Initial icons parsing
+  if (window.lucide) {
+    lucide.createIcons();
+  }
 });

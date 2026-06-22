@@ -7,6 +7,8 @@
   <title>Payment Engine — Dashboard</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
   <link rel="stylesheet" href="styles.css">
+  <!-- Lucide Icons Library -->
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
 
@@ -18,7 +20,9 @@
     <!-- ─── Header ─── -->
     <header class="app-header">
       <div class="app-logo">
-        <div class="app-logo-icon">⚡</div>
+        <div class="app-logo-icon">
+          <i data-lucide="activity"></i>
+        </div>
         <div class="app-logo-text">
           <h1>Payment Engine</h1>
           <p>Distributed Ledger Gateway</p>
@@ -33,19 +37,19 @@
     <!-- ─── Tab Navigation ─── -->
     <nav class="tab-nav" role="tablist" aria-label="Main navigation">
       <button class="tab-btn active" data-tab="dashboard" role="tab" id="nav-dashboard">
-        <span class="tab-icon">📊</span>
+        <i data-lucide="bar-chart-3"></i>
         <span class="tab-label">Dashboard</span>
       </button>
       <button class="tab-btn" data-tab="wallets" role="tab" id="nav-wallets">
-        <span class="tab-icon">💳</span>
+        <i data-lucide="wallet"></i>
         <span class="tab-label">Wallets</span>
       </button>
       <button class="tab-btn" data-tab="transfer" role="tab" id="nav-transfer">
-        <span class="tab-icon">💸</span>
+        <i data-lucide="send"></i>
         <span class="tab-label">Transfer</span>
       </button>
       <button class="tab-btn" data-tab="history" role="tab" id="nav-history">
-        <span class="tab-icon">📋</span>
+        <i data-lucide="list-todo"></i>
         <span class="tab-label">History</span>
       </button>
     </nav>
@@ -80,7 +84,9 @@
       <!-- Recent Wallets -->
       <div class="section-header">
         <h2 class="section-title">Recent Wallets</h2>
-        <button class="btn btn-sm btn-primary" onclick="document.querySelector('[data-tab=wallets]').click()">View All →</button>
+        <button class="btn btn-sm btn-secondary" onclick="document.querySelector('[data-tab=wallets]').click()">
+          View All <i data-lucide="arrow-right" style="width:12px;height:12px;margin-left:4px;"></i>
+        </button>
       </div>
       <div id="recent-wallets" class="wallet-grid">
         <div class="loading-overlay">
@@ -97,7 +103,7 @@
       <div class="section-header">
         <h2 class="section-title">All Wallets</h2>
         <button class="btn btn-primary" onclick="openCreateWalletModal()" id="btn-new-wallet">
-          ＋ New Wallet
+          <i data-lucide="plus"></i> New Wallet
         </button>
       </div>
 
@@ -114,7 +120,9 @@
     <section id="tab-transfer" class="tab-content" role="tabpanel">
 
       <div class="form-panel">
-        <div class="form-panel-title">💸 Send Funds</div>
+        <div class="form-panel-title">
+          <i data-lucide="send"></i> Send Funds
+        </div>
 
         <form id="transfer-form" autocomplete="off">
           <div class="form-group">
@@ -147,8 +155,8 @@
             </div>
           </div>
 
-          <button type="submit" class="btn btn-success" id="tf-submit-btn" style="width: 100%;">
-            💸 Send Money
+          <button type="submit" class="btn btn-primary" id="tf-submit-btn" style="width: 100%;">
+            Send Money
           </button>
         </form>
 
@@ -187,7 +195,9 @@
         </div>
 
         <div id="history-empty" class="empty-state" style="display:block;">
-          <div class="empty-state-icon">📋</div>
+          <div class="empty-state-icon">
+            <i data-lucide="inbox"></i>
+          </div>
           <h3>Select a wallet</h3>
           <p>Choose a wallet above to view its transaction history</p>
         </div>
@@ -202,7 +212,9 @@
     <div class="modal">
       <div class="modal-header">
         <h2 class="modal-title">Create New Wallet</h2>
-        <button class="modal-close" onclick="closeCreateWalletModal()" aria-label="Close">✕</button>
+        <button class="modal-close" onclick="closeCreateWalletModal()" aria-label="Close">
+          <i data-lucide="x"></i>
+        </button>
       </div>
       <form id="create-wallet-form" autocomplete="off">
         <div class="form-group">
@@ -226,7 +238,7 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" onclick="closeCreateWalletModal()">Cancel</button>
-          <button type="submit" class="btn btn-primary" id="cw-submit-btn">✓ Create Wallet</button>
+          <button type="submit" class="btn btn-primary" id="cw-submit-btn">Create Wallet</button>
         </div>
       </form>
     </div>
@@ -237,7 +249,9 @@
     <div class="modal" style="max-width: 640px;">
       <div class="modal-header">
         <h2 class="modal-title">Wallet Details</h2>
-        <button class="modal-close" onclick="closeWalletDetailsModal()" aria-label="Close">✕</button>
+        <button class="modal-close" onclick="closeWalletDetailsModal()" aria-label="Close">
+          <i data-lucide="x"></i>
+        </button>
       </div>
 
       <div style="margin-bottom: 20px;">
