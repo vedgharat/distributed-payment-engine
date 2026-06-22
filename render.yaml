@@ -63,8 +63,8 @@ databases:
     databaseName: payment_gateway
     user: pguser
 
+redis:
   # ---------- Redis ----------
   - name: payment-redis
-    type: redis
     plan: free
     maxmemoryPolicy: allkeys-lru
