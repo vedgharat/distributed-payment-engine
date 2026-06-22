@@ -56,15 +56,15 @@ services:
       - key: PORT
         value: "8080"
 
+  # ---------- Redis ----------
+  - type: redis
+    name: payment-redis
+    plan: free
+    maxmemoryPolicy: allkeys-lru
+
 databases:
   # ---------- PostgreSQL ----------
   - name: payment-db
     plan: free
     databaseName: payment_gateway
     user: pguser
-
-redis:
-  # ---------- Redis ----------
-  - name: payment-redis
-    plan: free
-    maxmemoryPolicy: allkeys-lru
