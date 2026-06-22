@@ -5,11 +5,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.CompletableFuture;
 
 @Component
+@ConditionalOnProperty(name = "app.kafka.enabled", havingValue = "true", matchIfMissing = true)
 @RequiredArgsConstructor
 @Slf4j
 public class PaymentEventProducer {

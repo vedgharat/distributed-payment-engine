@@ -15,10 +15,13 @@ import org.springframework.kafka.core.*;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.kafka.support.serializer.JsonSerializer;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+
 import java.util.HashMap;
 import java.util.Map;
 
 @Configuration
+@ConditionalOnProperty(name = "app.kafka.enabled", havingValue = "true", matchIfMissing = true)
 public class KafkaConfig {
 
     public static final String PAYMENTS_TOPIC = "payments-topic";

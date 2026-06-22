@@ -1,0 +1,46 @@
+# ============================================================
+# RENDER DEPLOYMENT PROFILE
+# Activated by setting SPRING_PROFILES_ACTIVE=render
+# ============================================================
+
+app:
+  kafka:
+    enabled: false       # Render has no managed Kafka; outbox events are saved to DB but not relayed
+
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+
+  # Render injects DB_HOST, DB_PORT, DB_NAME as separate env vars
+  # We construct the JDBC URL from them
+  datasource:
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=require
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+
+  data:
+    redis:
+      host: ${SPRING_REDIS_HOST}
+      port: ${SPRING_REDIS_PORT:6379}
+      password: ${SPRING_REDIS_PASSWORD}
+      ssl:
+        enabled: ${SPRING_REDIS_SSL:true}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+server:
+  port: ${PORT:8080}
+
+logging:
+  level:
+    root: INFO
+    com.paymentgateway: INFO

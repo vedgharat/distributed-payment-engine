@@ -1,0 +1,70 @@
+# ============================================================
+# Render Blueprint — Infrastructure as Code
+# Provisions: Web Service + PostgreSQL + Redis
+# Deploy: Connect this repo on Render Dashboard → it reads this file
+# ============================================================
+
+services:
+  # ---------- Spring Boot Application ----------
+  - type: web
+    name: payment-gateway
+    runtime: docker
+    repo: https://github.com/vedgharat/distributed-payment-engine.git
+    branch: main
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: render
+      - key: DB_HOST
+        fromDatabase:
+          name: payment-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: payment-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: payment-db
+          property: database
+      - key: SPRING_DATASOURCE_USERNAME
+        fromDatabase:
+          name: payment-db
+          property: user
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromDatabase:
+          name: payment-db
+          property: password
+      - key: SPRING_REDIS_HOST
+        fromService:
+          name: payment-redis
+          type: redis
+          property: host
+      - key: SPRING_REDIS_PORT
+        fromService:
+          name: payment-redis
+          type: redis
+          property: port
+      - key: SPRING_REDIS_PASSWORD
+        fromService:
+          name: payment-redis
+          type: redis
+          property: password
+      - key: SPRING_REDIS_SSL
+        value: "true"
+      - key: PORT
+        value: "8080"
+
+databases:
+  # ---------- PostgreSQL ----------
+  - name: payment-db
+    plan: free
+    databaseName: payment_gateway
+    user: pguser
+
+  # ---------- Redis ----------
+  - name: payment-redis
+    type: redis
+    plan: free
+    maxmemoryPolicy: allkeys-lru
