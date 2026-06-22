@@ -45,6 +45,11 @@ public class GlobalExceptionHandler {
     return buildError(HttpStatus.BAD_REQUEST, "VALIDATION_FAILED", "Request validation failed", details);
   }
 
+  @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+  public ResponseEntity<ErrorResponse> handleNoResourceFound(org.springframework.web.servlet.resource.NoResourceFoundException ex) {
+    return buildError(HttpStatus.NOT_FOUND, "NOT_FOUND", ex.getMessage(), null);
+  }
+
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
     log.error("Unexpected error", ex);
