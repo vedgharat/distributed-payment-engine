@@ -36,23 +36,11 @@ services:
         fromDatabase:
           name: payment-db
           property: password
-      - key: SPRING_REDIS_HOST
+      - key: SPRING_REDIS_URL
         fromService:
           name: payment-redis
           type: redis
-          property: host
-      - key: SPRING_REDIS_PORT
-        fromService:
-          name: payment-redis
-          type: redis
-          property: port
-      - key: SPRING_REDIS_PASSWORD
-        fromService:
-          name: payment-redis
-          type: redis
-          property: password
-      - key: SPRING_REDIS_SSL
-        value: "true"
+          property: connectionString
       - key: PORT
         value: "8080"
 

@@ -21,11 +21,7 @@ spring:
 
   data:
     redis:
-      host: ${SPRING_REDIS_HOST}
-      port: ${SPRING_REDIS_PORT:6379}
-      password: ${SPRING_REDIS_PASSWORD}
-      ssl:
-        enabled: ${SPRING_REDIS_SSL:true}
+      url: ${SPRING_REDIS_URL}
 
   jpa:
     hibernate:
